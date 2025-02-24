@@ -13,7 +13,7 @@ HEADERS = {
     "x-rapidapi-key": os.getenv("RAPID_API_KEY")
 }
 PARAMS = {
-    "limit": 50
+    "limit": 500
 }
 
 # AWS Config

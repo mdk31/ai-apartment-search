@@ -1,5 +1,5 @@
 attrs==25.1.0
-aws-cdk-lib==2.180.0
+aws-cdk-lib==2.179.0
 aws-cdk.asset-awscli-v1==2.2.224
 aws-cdk.asset-node-proxy-agent-v6==2.1.0
 aws-cdk.cloud-assembly-schema==39.2.20
@@ -8,7 +8,7 @@ botocore==1.36.26
 cattrs==24.1.2
 certifi==2025.1.31
 charset-normalizer==3.4.1
-constructs==10.4.2
+constructs>=10.0.0,<11.0.0
 exceptiongroup==1.2.2
 idna==3.10
 importlib_resources==6.5.2

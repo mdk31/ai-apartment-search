@@ -1,18 +1,13 @@
+import aws_cdk as cdk
+
 from aws_cdk import (
     Stack,
-    aws_s3 as s3,
-    aws_cloudfront as cloudfront,
-    aws_cloudfront_origins as origins,
-    aws_ecs as ecs,
-    aws_ecs_patterns as ecs_patterns,
-    aws_apigateway as apigw,
-    aws_route53 as route53,
-    aws_route53_targets as targets,
-    aws_certificatemanager as acm,
+    aws_ec2 as ec2,
+    aws_iam as iam,
     aws_lambda as _lambda,
-    aws_secretsmanager as secretsmanager,
-    aws_ssm as ssm,
-    aws_logs as logs
+    aws_apigateway as apigw,
+    aws_lambda_python_alpha as python,
+    aws_secretsmanager as secretsmanager
     # core
 )
 
@@ -22,8 +17,76 @@ class AiApartmentSearchStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
-        domain_name = "yourcustomdomain.com"
-        hosted_zone = route53.HostedZone.from_lookup(self, "HostedZone", domain_name=domain_name)
+        db_secret_arn = cdk.Fn.import_value("DatabaseSecretARN")
+        db_endpoint = cdk.Fn.import_value("DatabaseEndpoint")
+        lambda_sg_id = cdk.Fn.import_value("LambdaSecurityGroupID")
+        vpc_id = cdk.Fn.import_value('VPCID')
+
+        db_secret = secretsmanager.Secret.from_secret_name_v2(
+            self, "DBSecret", "PostgreSQLCredentials"
+        )
+
+        vpc = ec2.Vpc.from_lookup(self, "ImportedVPC", vpc_id=vpc_id)
+        lambda_security_group = ec2.SecurityGroup.from_security_group_id(
+            self, 'ImportedLambdaSecurityGroup',
+            lambda_sg_id
+        )
+
+        lambda_role = iam.Role(
+            self, 'LambdaExecutionRole',
+            assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole')
+            ]
+        )
+
+        api_lambda_role = iam.Role(
+            self, 'ApiLambdaExecutionRole',
+            assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name('service-role/AWSLambdaBasicExecutionRole')
+            ]
+
+        )
+
+        db_secret.grant_read(lambda_role)
+
+        # lambda funcitons
+        db_query_lambda = _lambda.Function(
+            self, 'DatabaseQueryLambda',
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler='db_lambda_handler',
+            code=_lambda.Code.from_asset('lambda/'),
+            vpc=vpc,
+            security_groups=[lambda_security_group],
+            role=lambda_role
+        )
+
+        openai_lambda = python.PythonFunction(
+            self, 'OpenAIHandlerLambda',
+            entry='lambda',  # Folder containing handler.py
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            handler='openai_lambda_handler'
+        )
+
+
+        api_gateway = apigw.LambdaRestApi(
+            self, "APIGateway",
+            handler=openai_lambda,
+            proxy=True,
+            deploy_options=apigw.StageOptions(
+                logging_level=apigw.MethodLoggingLevel.ERROR,
+                data_trace_enabled=False
+            )
+        )
+
+
+
+
+
+
+        # domain_name = "yourcustomdomain.com"
+        # hosted_zone = route53.HostedZone.from_lookup(self, "HostedZone", domain_name=domain_name)
 
         # certificate = acm.Certificate(
         #     self, "SiteCertificate",
@@ -72,16 +135,6 @@ class AiApartmentSearchStack(Stack):
         # )
         # openai_secret.grant_read(openai_lambda)
 
-        # api_gateway = apigw.LambdaRestApi(
-        #     self, "APIGateway",
-        #     handler=openai_lambda,
-        #     proxy=True,
-        #     deploy_options=apigw.StageOptions(
-        #         logging_level=apigw.MethodLoggingLevel.ERROR,
-        #         access_log_destination=apigw.LogGroupLogDestination(log_group),
-        #         access_log_format=apigw.AccessLogFormat.json_with_standard_fields()
-        #     )
-        # )
 
         # ssm.StringParameter(
         #     self, "OpenAIAPIURLParameter",

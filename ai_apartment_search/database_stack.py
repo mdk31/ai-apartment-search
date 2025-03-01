@@ -12,7 +12,21 @@ class DatabaseStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
     
-        vpc = ec2.Vpc(self, "DatabaseVPC")
+        vpc = ec2.Vpc(
+            self, "DatabaseVPC",
+            nat_gateways=1,
+            subnet_configuration=[
+                ec2.SubnetConfiguration(
+                    name='PublicSubnet',
+                    subnet_type=ec2.SubnetType.PUBLIC
+                ),
+                ec2.SubnetConfiguration(
+                    name='PrivateSubnet',
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
+                )
+            ]
+        )
+
 
         db_security_group = ec2.SecurityGroup(
             self, "DBSecurityGroup",
@@ -41,14 +55,14 @@ class DatabaseStack(Stack):
             )
         )
 
-        db_secret_policy = iam.PolicyStatement(
-            actions=["secretsmanager:GetSecretValue"],
-            resources=[db_secret.secret_arn],
-            principals=[iam.ServicePrincipal("lambda.amazonaws.com")]
-        )
+        # db_secret_policy = iam.PolicyStatement(
+        #     actions=["secretsmanager:GetSecretValue"],
+        #     resources=[db_secret.secret_arn],
+        #     principals=[iam.ServicePrincipal("lambda.amazonaws.com")]
+        # )
 
         # allow lambda function to get db secrets
-        db_secret.add_to_resource_policy(db_secret_policy)
+        # db_secret.add_to_resource_policy(db_secret_policy)
 
         database = rds.DatabaseInstance(
             self, "PostgreSQLInstance",

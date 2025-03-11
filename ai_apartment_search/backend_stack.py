@@ -46,7 +46,6 @@ class BackendStack(Stack):
                 burst_limit=20
             )
         )
-        
         rest_lambda_integration = apigateway.LambdaIntegration(
             request_handler_lambda
         )

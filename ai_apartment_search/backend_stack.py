@@ -6,7 +6,9 @@ from aws_cdk import (
     aws_s3_deployment as s3_deployment,
     aws_cloudfront as cloudfront,
     aws_iam as iam,
-    aws_cloudfront_origins as origins
+    aws_cloudfront_origins as origins,
+    aws_stepfunctions as sfn,
+    aws_lambda_python_alpha as lambda_python
 )
 from constructs import Construct
 
@@ -14,3 +16,15 @@ from constructs import Construct
 class BackendStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
+
+        state_machine = sfn.StateMachine(
+            self, 'BackendWorkflow',
+            definition=sfn.Pass(self, 'PlaceholderState')
+        )
+
+        request_handler_lambda = lambda_python.PythonFunction(
+            self, 'RequestHandlerLambda',
+            entry='lambda/',
+            index='handler.py',
+            handler='handler'
+        )

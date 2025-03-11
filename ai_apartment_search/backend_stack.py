@@ -37,6 +37,16 @@ class BackendStack(Stack):
             self, 'BackendAPI',
             rest_api_name='Backend Service',
         )
+
+        plan = api.add_usage_plan(
+            'UsagePlan',
+            name='RateLimitPlan',
+            throttle=apigateway.ThrottleSettings(
+                rate_limit=10,
+                burst_limit=20
+            )
+        )
+        
         rest_lambda_integration = apigateway.LambdaIntegration(
             request_handler_lambda
         )

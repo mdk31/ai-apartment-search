@@ -8,7 +8,8 @@ from aws_cdk import (
     aws_iam as iam,
     aws_cloudfront_origins as origins,
     aws_stepfunctions as sfn,
-    aws_lambda_python_alpha as lambda_python
+    aws_lambda_python_alpha as lambda_python,
+    aws_apigateway as apigateway
 )
 from constructs import Construct
 
@@ -30,4 +31,18 @@ class BackendStack(Stack):
             environment={
                 "STEP_FUNCTION_ARN": state_machine.state_machine_arn
             }
+        )
+
+        api = apigateway.RestApi(
+            self, 'BackendAPI',
+            rest_api_name='Backend Service',
+        )
+        rest_lambda_integration = apigateway.LambdaIntegration(
+            request_handler_lambda
+        )
+        api.root.add_method("POST", rest_lambda_integration)
+
+        cdk.CfnOutput(
+            self, 'APIGatewayURL',
+            value=api.url,
         )

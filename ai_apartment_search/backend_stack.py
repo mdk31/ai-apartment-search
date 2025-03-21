@@ -10,7 +10,7 @@ from aws_cdk import (
     aws_stepfunctions as sfn,
     aws_lambda_python_alpha as lambda_python,
     aws_apigateway as apigateway,
-    aws_wafv2 as waf
+    aws_wafv2 as wafd
 )
 from constructs import Construct
 
@@ -55,18 +55,18 @@ class BackendStack(Stack):
         )
         api.root.add_method("POST", rest_lambda_integration)
 
-        web_acl = waf.CfnWebACL(
-            self, 'APIGatewayWAF',
-            scope='REGIONAL',
-            default_action=waf.CfnWebACL.DefaultActionProperty(allow={}),
-            rules=[
-                waf.CfnWebACL.RuleProperty(
-                    name='BlockedIPs',
-                    priority=1,
-                    action=waf.CfnWebACL.ReulActionProperty(allow={})
-                )
-            ]
-        )
+        # web_acl = waf.CfnWebACL(
+        #     self, 'APIGatewayWAF',
+        #     scope='REGIONAL',
+        #     default_action=waf.CfnWebACL.DefaultActionProperty(allow={}),
+        #     rules=[
+        #         waf.CfnWebACL.RuleProperty(
+        #             name='BlockedIPs',
+        #             priority=1,
+        #             action=waf.CfnWebACL.ReulActionProperty(allow={})
+        #         )
+        #     ]
+        # )
 
 
 

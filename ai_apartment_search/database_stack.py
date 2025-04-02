@@ -13,28 +13,16 @@ class DatabaseStack(Stack):
         super().__init__(scope, id, **kwargs)
 
         vpc_id = cdk.Fn.import_value('VPCID')
+        db_sg_id = cdk.Fn.import_value('DBSecurityGroupID')
+        lambda_sg_id = cdk.Fn.import_value('LambdaSecurityGroupID')
+        
         vpc = ec2.Vpc.from_lookup(
             self, 'ImportedVPC',
             vpc_id=vpc_id
         )
 
 
-        db_security_group = ec2.SecurityGroup(
-            self, "DBSecurityGroup",
-            vpc=vpc,
-            description="The security group for the PostgreSQL database"
-        )
 
-        lambda_security_group = ec2.SecurityGroup(
-            self, "LambdaSecurityGroup",
-            vpc=vpc,
-            description="The security group for lambda functions to connect to the database"
-        )
-
-        db_security_group.add_ingress_rule(
-            peer=lambda_security_group,
-            connection=ec2.Port.POSTGRES
-        )
 
         db_secret = secretsmanager.Secret(
             self, 'DBSSecret',

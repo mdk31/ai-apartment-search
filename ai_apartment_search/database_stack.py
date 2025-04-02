@@ -11,20 +11,11 @@ from constructs import Construct
 class DatabaseStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
-    
-        vpc = ec2.Vpc(
-            self, "DatabaseVPC",
-            nat_gateways=1,
-            subnet_configuration=[
-                ec2.SubnetConfiguration(
-                    name='PublicSubnet',
-                    subnet_type=ec2.SubnetType.PUBLIC
-                ),
-                ec2.SubnetConfiguration(
-                    name='PrivateSubnet',
-                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
-                )
-            ]
+
+        vpc_id = cdk.Fn.import_value('VPCID')
+        vpc = ec2.Vpc.from_lookup(
+            self, 'ImportedVPC',
+            vpc_id=vpc_id
         )
 
 

@@ -81,11 +81,11 @@ class DatabaseStack(Stack):
         #     removal_policy=cdk.RemovalPolicy.RETAIN
         # )
 
-        # cdk.CfnOutput(
-        #     self, 'VPCID',
-        #     value=vpc.vpc_id,
-        #     description='The VPC ID where the DB is deployed'
-        # )
+        cdk.CfnOutput(
+            self, 'VPCID',
+            value=vpc.vpc_id,
+            description='The VPC ID where the DB is deployed'
+        )
 
         # cdk.CfnOutput(
         #     self, 'LambdaSecurityGroupID',

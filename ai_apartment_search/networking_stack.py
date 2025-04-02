@@ -28,22 +28,34 @@ class DatabaseStack(Stack):
         )
 
 
-        # db_security_group = ec2.SecurityGroup(
-        #     self, "DBSecurityGroup",
-        #     vpc=vpc,
-        #     description="The security group for the PostgreSQL database"
-        # )
+        db_security_group = ec2.SecurityGroup(
+            self, "DBSecurityGroup",
+            vpc=vpc,
+            description="The security group for the PostgreSQL database"
+        )
 
-        # lambda_security_group = ec2.SecurityGroup(
-        #     self, "LambdaSecurityGroup",
-        #     vpc=vpc,
-        #     description="The security group for lambda functions to connect to the database"
-        # )
+        lambda_security_group = ec2.SecurityGroup(
+            self, "LambdaSecurityGroup",
+            vpc=vpc,
+            description="The security group for lambda functions to connect to the database"
+        )
 
-        # db_security_group.add_ingress_rule(
-        #     peer=lambda_security_group,
-        #     connection=ec2.Port.POSTGRES
-        # )
+        db_security_group.add_ingress_rule(
+            peer=lambda_security_group,
+            connection=ec2.Port.POSTGRES
+        )
+
+
+        cdk.CfnOutput(
+            self, 'LambdaSecurityGroupID',
+            value=lambda_security_group.security_group_id,
+            description="The security group ID for lambda functions that need DB access")
+        
+
+        cdk.CfnOutput(
+            self, 'DBSecurityGroupID',
+            value=db_security_group.security_group_id,
+            description="DB security group")
 
         # db_secret = secretsmanager.Secret(
         #     self, 'DBSSecret',
@@ -87,9 +99,5 @@ class DatabaseStack(Stack):
             description='The VPC ID where the DB is deployed'
         )
 
-        # cdk.CfnOutput(
-        #     self, 'LambdaSecurityGroupID',
-        #     value=lambda_security_group.security_group_id,
-        #     description="The security group ID for lamda functions that need DB access")
         
 

@@ -15,12 +15,21 @@ class DatabaseStack(Stack):
         vpc_id = cdk.Fn.import_value('VPCID')
         db_sg_id = cdk.Fn.import_value('DBSecurityGroupID')
         lambda_sg_id = cdk.Fn.import_value('LambdaSecurityGroupID')
-        
+
         vpc = ec2.Vpc.from_lookup(
             self, 'ImportedVPC',
             vpc_id=vpc_id
         )
 
+        db_security_group = ec2.SecurityGroup.from_security_group_id(
+            self, 'ImportedDBSG',
+            security_group_id=db_sg_id
+        )
+
+        lambda_security_group = ec2.SecurityGroup.from_security_group_id(
+            self, 'ImportedLambdasG',
+            security_group_id=lambda_sg_id
+        )
 
 
 

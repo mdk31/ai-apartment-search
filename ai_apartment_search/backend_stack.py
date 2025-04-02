@@ -26,7 +26,7 @@ class BackendStack(Stack):
 
         request_handler_lambda = lambda_python.PythonFunction(
             self, 'RequestHandlerLambda',
-            entry='lambda/openai_lambda',
+            entry='lambda/step_initate_lambda',
             index='handler.py',
             handler='lambda_handler',
             environment={

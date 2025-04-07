@@ -8,16 +8,24 @@ from aws_cdk import (
     aws_iam as iam,
     aws_cloudfront_origins as origins,
     aws_stepfunctions as sfn,
+    aws_stepfunctions_tasks as sfn_tasks,
     aws_lambda_python_alpha as lambda_python,
     aws_apigateway as apigateway,
-    aws_wafv2 as wafd
+    aws_wafv2 as wafd,
+    aws_secretsmanager as secretsmanager
 )
 from constructs import Construct
 
-# TODO: write index document
+# TODO: Chain tasks in state machine correctly
 class BackendStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
+
+        openai_tasks = sfn_tasks.LambdaInvoke(
+            self, 'CallOpenAI',
+            lambda_function=openai_lambda,
+            output_path="$.Payload"
+        )
 
         state_machine = sfn.StateMachine(
             self, 'BackendWorkflow',
@@ -34,11 +42,22 @@ class BackendStack(Stack):
             }
         )
 
+        openai_secret = secretsmanager.Secret.from_secret_name_v2(
+            self, 'OpenAISecret', 'OpenAIKey'
+        )
+
         openai_lambda = lambda_python.PythonFunction(
             self, 'OpenAILambda',
             entry='lambda_files/openai_lambda',
-            index='handler.py'
+            index='handler.py',
+            environment={
+                'OPENAI_SECRET_NAME': openai_secret.secret_name
+            },
+            runtime=cdk.aws_lambda.Runtime.PYTHON_3_11,
+            timeout=cdk.Duration.seconds(10)
         )
+
+        openai_secret.grant_read(openai_lambda)
 
         api = apigateway.RestApi(
             self, 'BackendAPI',

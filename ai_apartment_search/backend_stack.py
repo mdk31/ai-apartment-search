@@ -26,12 +26,18 @@ class BackendStack(Stack):
 
         request_handler_lambda = lambda_python.PythonFunction(
             self, 'RequestHandlerLambda',
-            entry='lambda/step_initate_lambda',
+            entry='lambda_files/step_initate_lambda',
             index='handler.py',
             handler='lambda_handler',
             environment={
                 "STEP_FUNCTION_ARN": state_machine.state_machine_arn
             }
+        )
+
+        openai_lambda = lambda_python.PythonFunction(
+            self, 'OpenAILambda',
+            entry='lambda_files/openai_lambda',
+            index='handler.py'
         )
 
         api = apigateway.RestApi(
@@ -67,6 +73,7 @@ class BackendStack(Stack):
         #         )
         #     ]
         # )
+
 
 
 

@@ -12,14 +12,20 @@ from aws_cdk import (
     aws_lambda_python_alpha as lambda_python,
     aws_apigateway as apigateway,
     aws_wafv2 as wafd,
-    aws_secretsmanager as secretsmanager
+    aws_secretsmanager as secretsmanager,
+    aws_logs as logs
 )
 from constructs import Construct
 
-# TODO: Chain tasks in state machine correctly
+# TODO: Chain tasks in state machine correctlyc
 class BackendStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
+
+        log_group = logs.LogGroup(
+            self, 'OpenAIStateMachineLogs',
+            retention=logs.RetentionDays.ONE_WEEK
+        )
 
         openai_tasks = sfn_tasks.LambdaInvoke(
             self, 'CallOpenAI',
@@ -29,7 +35,12 @@ class BackendStack(Stack):
 
         state_machine = sfn.StateMachine(
             self, 'BackendWorkflow',
-            definition=sfn.Pass(self, 'PlaceholderState')
+            definition=openai_tasks,
+            state_machine_type=sfn.StateMachineType.STANDARD,
+            logs=sfn.LogOptions(
+                destination=log_group,
+                level=sfn.LogLevel.ALL
+            )
         )
 
         request_handler_lambda = lambda_python.PythonFunction(

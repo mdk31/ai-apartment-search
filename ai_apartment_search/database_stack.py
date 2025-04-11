@@ -87,8 +87,7 @@ class DatabaseStack(Stack):
         )
 
         cdk.CfnOutput(
-            self, "DatabaseSecretARN",
-            value=db_secret.secret_arn,
-            description="ARN of the secrets manager secret storing DB credentials"
+            self, "DatabaseSecretName",
+            value=db_secret.secret_name
         )
 

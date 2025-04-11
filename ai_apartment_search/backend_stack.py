@@ -68,6 +68,20 @@ class BackendStack(Stack):
             timeout=cdk.Duration.seconds(10)
         )
 
+        db_secret_name = cdk.Fn.import_value('DatabaseSecretName')
+        db_secret = secretsmanager.Secret.from_secret_name_v2(
+            self, 'ImportedDBSecret', db_secret_name
+        )
+
+        query_db_lambda = lambda_python.PythonFunction(
+            self, 'QueryDBLambda',
+            entry='lambda_files/query_db_lambda',
+            index='handler.py',
+            environment={
+                'DBSECRET': db_secret.secret_name
+            }
+        )
+
         openai_secret.grant_read(openai_lambda)
 
         api = apigateway.RestApi(

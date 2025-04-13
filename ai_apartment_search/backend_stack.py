@@ -11,7 +11,7 @@ from aws_cdk import (
     aws_stepfunctions_tasks as sfn_tasks,
     aws_lambda_python_alpha as lambda_python,
     aws_apigateway as apigateway,
-    aws_wafv2 as wafd,
+    aws_wafv2 as wafv2,
     aws_secretsmanager as secretsmanager,
     aws_logs as logs
 )
@@ -32,7 +32,6 @@ class BackendStack(Stack):
             lambda_function=openai_lambda,
             output_path="$.Payload"
         )
-
 
 
         request_handler_lambda = lambda_python.PythonFunction(
@@ -116,6 +115,23 @@ class BackendStack(Stack):
             request_handler_lambda
         )
         api.root.add_method("POST", rest_lambda_integration)
+
+        web_acl = wafv2.CfnWebACL(
+            self, 'APIGatewayWAF',
+            scope='REGIONAL',
+            default_action=wafv2.CfnWebACL.DefaultActionProperty(allow={}),
+            rules=[
+                wafv2.CfnWebACL.RuleProperty(
+                    name='CRSRule',
+                    statement = wafv2.CfnWebACL.StatementProperty(
+                        managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
+                            vendor_name='AWS',
+                            name='AWSManagedRulesCommonRuleSet'
+                        )
+                    )
+                )
+            ]
+        )
 
         # web_acl = waf.CfnWebACL(
         #     self, 'APIGatewayWAF',

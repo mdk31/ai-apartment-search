@@ -91,8 +91,6 @@ class BackendStack(Stack):
             )
         )
 
-
-
         openai_secret.grant_read(openai_lambda)
 
         api = apigateway.RestApi(
@@ -132,21 +130,6 @@ class BackendStack(Stack):
                 )
             ]
         )
-
-        # web_acl = waf.CfnWebACL(
-        #     self, 'APIGatewayWAF',
-        #     scope='REGIONAL',
-        #     default_action=waf.CfnWebACL.DefaultActionProperty(allow={}),
-        #     rules=[
-        #         waf.CfnWebACL.RuleProperty(
-        #             name='BlockedIPs',
-        #             priority=1,
-        #             action=waf.CfnWebACL.ReulActionProperty(allow={})
-        #         )
-        #     ]
-        # )
-
-
 
 
         cdk.CfnOutput(

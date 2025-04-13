@@ -16,17 +16,18 @@ def lambda_handler(event, context):
                 "body": json.dumps({"error": "Missing 'query' in request body"})
             }
         
-        response = sfn_client.start_execution(
+        response = sfn_client.start_sync_execution(
             stateMachineArn=STEP_FUNCTION_ARN,
             input=json.dumps(body)
         )
+        # The actual result of the workflow is in response["output"]
+        result = json.loads(response["output"])
+
         return {
             "statusCode": 200,
-            "body": json.dumps({
-                "message": "Step function started",
-                "executionArn": response["executionArn"]
-            })
+            "body": json.dumps(result)
         }
+    
     except Exception as e:
         return {
             "statusCode": 500,

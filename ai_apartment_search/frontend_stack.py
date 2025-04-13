@@ -10,7 +10,6 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-# TODO: write index document
 class FrontendStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
@@ -24,30 +23,24 @@ class FrontendStack(Stack):
             auto_delete_objects=True
         )
 
-        distribution =cloudfront.Distribution(
-            self, 'FrontendDistribution',
-            default_root_object="index.html",
-            default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3BucketOrigin(frontend_bucket),
-                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
-            )
-        )
-        # distribution = cloudfront.Distribution(
-        #     self, "FrontendDistribution",
-        #     default_behavior=cloudfront.BehaviorOptions(
-        #         origin=origins.S3Origin(
-        #             frontend_bucket,  # FIX: Correct way to define S3 origin
-        #             origin_access_identity=None  # FIX: Required for OAC to work
-        #         ),
-        #         viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
-        #     )
-        # )
-
         s3_deployment.BucketDeployment(
             self, 'FrontendDeployment',
             destination_bucket=frontend_bucket,
             sources=[s3_deployment.Source.asset("frontend/build")],
             retain_on_delete=False
+        )
+
+        distribution =cloudfront.Distribution(
+            self, 'FrontendDistribution',
+            default_root_object="index.html",
+            default_behavior=cloudfront.BehaviorOptions(
+                origin=origins.S3BucketOrigin.with_origin_access_control(
+                    frontend_bucket, 
+                    origin_access_levels=[cloudfront.AccessLevel.READ, cloudfront.AccessLevel.LIST]
+                ),
+                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED
+            )
         )
 
         frontend_bucket.add_to_resource_policy(
@@ -62,19 +55,6 @@ class FrontendStack(Stack):
                 }
             )
         )
-
-        oac = cloudfront.CfnOriginAccessControl(
-            self, "FrontendOAC",
-            origin_access_control_config=cloudfront.CfnOriginAccessControl.OriginAccessControlConfigProperty(
-            name="FrontendOAC",
-            origin_access_control_origin_type="s3",
-            signing_behavior="always", 
-            signing_protocol="sigv4"  
-        )
-    )
-        
-        cfn_distribution = distribution.node.default_child
-        cfn_distribution.add_property_override("DistributionConfig.Origins.0.OriginAccessControlId", oac.ref)
 
         cdk.CfnOutput(
             self, "CloudFrontURL",

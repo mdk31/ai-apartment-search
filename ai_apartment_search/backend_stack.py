@@ -33,15 +33,7 @@ class BackendStack(Stack):
             output_path="$.Payload"
         )
 
-        state_machine = sfn.StateMachine(
-            self, 'BackendWorkflow',
-            definition=openai_tasks,
-            state_machine_type=sfn.StateMachineType.STANDARD,
-            logs=sfn.LogOptions(
-                destination=log_group,
-                level=sfn.LogLevel.ALL
-            )
-        )
+
 
         request_handler_lambda = lambda_python.PythonFunction(
             self, 'RequestHandlerLambda',
@@ -81,6 +73,26 @@ class BackendStack(Stack):
                 'DBSECRET': db_secret.secret_name
             }
         )
+
+        query_task = sfn_tasks.LambdaInvoke(
+            self, 'QueryDB',
+            lambda_function=query_db_lambda,
+            output_path="$.Payload"
+        )
+
+        definition = openai_tasks.next(query_task)
+
+        state_machine = sfn.StateMachine(
+            self, 'BackendWorkflow',
+            definition=definition,
+            state_machine_type=sfn.StateMachineType.STANDARD,
+            logs=sfn.LogOptions(
+                destination=log_group,
+                level=sfn.LogLevel.ALL
+            )
+        )
+
+
 
         openai_secret.grant_read(openai_lambda)
 

@@ -7,11 +7,10 @@ from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 # TODO: Add tests
 # TODO: integrate get_openai with the rest of the function
 
-sfn_client = boto3.client('secretsmanager')
+sm_client = boto3.client('secretsmanager')
 cache_config = SecretCacheConfig()
 cache = SecretCache(config=cache_config, client=sfn_client)
 
-STEP_FUNCTION_ARN = os.getenv('STEP_FUNCTION_ARN')
 
 def get_openai_key():
     secret_name = os.environ["OPENAI_SECRET_NAME"]

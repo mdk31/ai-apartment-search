@@ -41,7 +41,9 @@ def fetch_active_rentals(api_key):
         "x-rapidapi-host": "streeteasy-api.p.rapidapi.com"
     }
 
-    areas_string = load_valid_areas()
+    all_areas = load_valid_areas().split(",")
+    chunk_size = 50
+    area_chunks = [all_areas[i:i + chunk_size] for i in range(0, len(all_areas), chunk_size)]
     
 
     params = {

@@ -4,6 +4,7 @@ import boto3
 import boto3
 import psycopg2
 import requests
+from datetime import datetime, timedelta
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 
 # TODO: Add tests
@@ -15,6 +16,9 @@ SECRET_NAME = os.environ["DBSECRET"]
 STREETEASY_API_KEY_NAME = os.environ['STREETEASY_API']
 AREA_FILE = os.path.join(os.path.dirname(__file__), 'valid_streeteasy_areas.txt')
 CHUNK_SIZE = 50
+
+SODA_LIMIT = 1000
+RATE_LIMIT_DELAY = 0.5
 
 sm_client = boto3.client('secretsmanager')
 cache = SecretCache(config=SecretCacheConfig(), client=sm_client)
@@ -80,6 +84,20 @@ def fetch_rental_details(api_key, rental_id):
     response.raise_for_status()
     return response.json()
 
+
+def fetch_nypd_complaints(bootstrap):
+    today = datetime.today()
+    current_year = today.year
+
+    # initial window
+    five_years_ago = (today - timedelta(days=365 * 5)).strftime('%Y-%m-%d')
+    where_clause = f"cmplnt_fr_dt >= '{five_years_ago}'T00:00:00"
+    one_year_ago = (today - timedelta(days=365)).strftime('%Y-%m-%d')
+
+    # loop through years
+    while current_year >= 2010:
+        start_date = f"{current_year}-01-01"
+        
 
 def get_existing_detail_ids(conn):
     with conn.cursor() as cursor:

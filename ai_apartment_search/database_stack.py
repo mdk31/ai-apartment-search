@@ -1,4 +1,5 @@
 import aws_cdk as cdk
+import json
 from aws_cdk import (
     Stack,
     aws_ec2 as ec2,
@@ -31,18 +32,6 @@ class DatabaseStack(Stack):
             security_group_id=lambda_sg_id
         )
 
-
-
-        db_secret = secretsmanager.Secret(
-            self, 'DBSSecret',
-            secret_name='PostgreSQLCredentials',
-            generate_secret_string=secretsmanager.SecretStringGenerator(
-                secret_string_template='{"username": "postgres"}',
-                generate_string_key='password',
-                exclude_characters='"@/\\'
-            )
-        )
-
         # db_secret_policy = iam.PolicyStatement(
         #     actions=["secretsmanager:GetSecretValue"],
         #     resources=[db_secret.secret_arn],
@@ -60,7 +49,7 @@ class DatabaseStack(Stack):
             allocated_storage='20GB',
             max_allocated_storage='100GB',
             storage_type=rds.StorageType.GP2,
-            credentials=rds.Credentials.from_secret(db_secret),
+            credentials=rds.Credentials.from_generated_secret('postgres'),
             security_groups=[db_security_group],
             publicly_accessible=False, # default
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
@@ -68,6 +57,14 @@ class DatabaseStack(Stack):
             delete_automated_backups=True,
             removal_policy=cdk.RemovalPolicy.RETAIN
         )
+
+        db_secret = database.secret
+        db_secret.node.default_child.add_property_override("SecretStringTemplate", json.dumps({
+            "host": database.db_instance_endpoint_address,
+            "port": "5432",
+            "dbname": "postgres"})
+        )
+
 
         cdk.CfnOutput(
             self, 'VPCID',

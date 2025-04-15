@@ -4,6 +4,8 @@ import boto3
 
 sfn_client = boto3.client('stepfunctions')
 STEP_FUNCTION_ARN = os.getenv('STEP_FUNCTION_ARN')
+REQUEST_LIMIT_TABLE = os.getenv('REQUEST_LIMIT_TABLE')
+DAILY_REQUEST_LIMIT = int(os.getenv('DAILY_REQUEST_LIMIT'))
 
 def lambda_handler(event, context):
 

@@ -6,7 +6,8 @@ import psycopg2
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 
 # TODO: Add tests
-# TODO: integrate get_openai with the rest of the function
+# TODO: update finish requests function
+# TODO: write load areas helper
 
 sm_client = boto3.client('secretsmanager')
 MAX_CALLS = int(os.environ["MAX_CALLS"])

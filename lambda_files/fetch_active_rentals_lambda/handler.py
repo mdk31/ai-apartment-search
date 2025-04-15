@@ -3,16 +3,20 @@ import os
 import boto3
 import boto3
 import psycopg2
+import requests
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 
 # TODO: Add tests
 # TODO: update finish requests function
 # TODO: write load areas helper
 
-sm_client = boto3.client('secretsmanager')
 MAX_CALLS = int(os.environ["MAX_CALLS"])
 SECRET_NAME = os.environ["DBSECRET"]
 STREETEASY_API_KEY_NAME = os.environ['STREETEASY_API']
+AREA_FILE = os.path.join(os.path.dirname(__file__), 'valid_streeteasy_areas.txt')
+CHUNK_SIZE = 50
+
+sm_client = boto3.client('secretsmanager')
 cache = SecretCache(config=SecretCacheConfig(), client=sm_client)
 
 def get_db_secret():
@@ -41,35 +45,150 @@ def fetch_active_rentals(api_key):
         "x-rapidapi-host": "streeteasy-api.p.rapidapi.com"
     }
 
-    all_areas = load_valid_areas().split(",")
-    chunk_size = 50
-    area_chunks = [all_areas[i:i + chunk_size] for i in range(0, len(all_areas), chunk_size)]
-    
+    area_chunks = load_valid_areas()
+    call_count = 0
+    for chunk in area_chunks:
+        offset = 0
+        while call_count < MAX_CALLS:
+            params = {
+                'areas': ','.join(chunk),
+                'limit': 500,
+                'offset': offset
+            }
+            response = requests.get(base_url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
 
-    params = {
-        'areas': areas_string,
-        'limit': 500
+            listings = data.get('listings', [])
+            if not listings:
+                break
+
+            rentals.extend(listings)            
+            offset += 500
+            call_count+= 1
+        
+    return rentals
+
+def fetch_rental_details(api_key, rental_id):
+    url = f"https://streeteasy-api.p.rapidapi.com/rentals/{rental_id}"
+    headers = {
+        "x-rapidapi-key": api_key,
+        "x-rapidapi-host": "streeteasy-api.p.rapidapi.com"
     }
 
-    offset = 0
-    call_count = 1
-    while call_count < MAX_CALLS:
-        params['offset'] = offset
-
-        response
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
 
 
+def get_existing_detail_ids(conn):
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT id FROM rental_details")
+        return set(row[0] for row in cursor.fetchall())
 
 def lambda_handler(event, context):
+    db_creds = get_db_secret()
+    api_key = get_streeteasy_api_secret()
+    conn = connect_to_db(db_creds)
+
     try:
-        user_query = event.get('query', '')
-        if not user_query:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': "Missing 'query'"})
-            }
-    except Exception as e:
+        active_rentals = fetch_active_rentals(api_key)
+        store_active_rentals(conn, active_rentals)
+
+        existing_ids = get_existing_detail_ids(conn)
+        missing = [r for r in active_rentals if r['id'] not in existing_ids]
+
+        details = []
+        for rental in missing:
+            try:
+                detail = fetch_rental_details(api_key, rental['id'])
+                details.append(detail)
+            except Exception as e:
+                print(f"Error fetching details for rental {rental['id']}: {e}")
+                continue
+
+        store_rental_details(conn, details)
+
         return {
-            "statusCode": 500,
-            "body": json.dumps({"error": str(e)})
+            "statusCode": 200,
+            "body": json.dumps({"message": f"{len(active_rentals)} rentals fetched, {len(details)} new details stored successfully"})
         }
+
+    finally:
+        conn.close()
+
+def load_valid_areas(chunk_size=CHUNK_SIZE):
+    with open(AREA_FILE, 'r') as file:
+        all_areas = [line.strip() for line in file if line.strip()]
+        return [all_areas[i:i + chunk_size] for i in range(0, len(all_areas), chunk_size)]
+
+def store_active_rentals(conn, rentals):
+    with conn.cursor() as cursor:
+        cursor.execute("TRUNCATE TABLE active_rentals")
+        for rental in rentals:
+            cursor.execute(
+                """
+                INSERT INTO active_rentals (
+                    id,
+                    url,
+                    latitude,
+                    longitude
+                    )
+                VALUES (%s, %s, %s, %s)
+                """,
+                (
+                    rental['id'],
+                    rental['url'],
+                    rental['latitude'],
+                    rental['longitude']
+                )
+            )
+    conn.commit()
+                        
+def store_rental_details(conn, details):
+    with conn.cursor() as cursor:
+        for detail in details:
+            cursor.execute(
+                """
+                INSERT INTO rental_details (
+                    id,
+                    listedAt,
+                    closedAt,
+                    availableFrom,
+                    address,
+                    price,
+                    borough,
+                    neighborhood,
+                    zipcode,
+                    propertyType,
+                    sqft,
+                    bedrooms,
+                    bathrooms,
+                    amenities,
+                    builtIn,
+                    images
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                %s, %s)
+                ON CONFLICT (id) DO NOTHING;
+                """,
+                (
+                    detail['id'],
+                    detail['listedAt'],
+                    detail['closedAt'],
+                    detail['availableFrom'],
+                    detail['address'],
+                    detail['price'],
+                    detail['borough'],
+                    detail['neighborhood'],
+                    detail['zipcode'],
+                    detail['propertyType'],
+                    detail['sqft'],
+                    detail['bedrooms'],
+                    detail['bathrooms'],
+                    json.dumps(detail['amenities']),
+                    detail['builtIn'],
+                    json.dumps(detail['images'])
+                )
+            )
+    conn.commit()

@@ -32,11 +32,17 @@ def connect_to_db(creds):
         password=creds["password"]
     )
 
-def fetch_active_rentals():
+def fetch_active_rentals(api_key):
     rentals = []
     base_url = "https://streeteasy-api.p.rapidapi.com/rentals/search"
 
+    headers = {
+        "x-rapidapi-key": api_key,
+        "x-rapidapi-host": "streeteasy-api.p.rapidapi.com"
+    }
+
     areas_string = load_valid_areas()
+    
 
     params = {
         'areas': areas_string,

@@ -3,9 +3,19 @@ import os
 import boto3
 
 sfn_client = boto3.client('stepfunctions')
+dynamodb = boto3.resource('dynamodb')
 STEP_FUNCTION_ARN = os.getenv('STEP_FUNCTION_ARN')
 REQUEST_LIMIT_TABLE = os.getenv('REQUEST_LIMIT_TABLE')
-DAILY_REQUEST_LIMIT = int(os.getenv('DAILY_REQUEST_LIMIT'))
+DAILY_REQUEST_LIMIT = int(os.getenv('DAILY_REQUEST_LIMIT', 1000))
+DAILY_IP_LIMIT = int(os.getenv('DAILY_IP_LIMIT', 10))
+
+table = dynamodb.Table(REQUEST_LIMIT_TABLE)
+
+def get_forwarded_ip(event):
+    try:
+        return event['headers'].get('X-Forwarded-For', '').split(',')[0].strip()
+    except Exception as e:
+        return None
 
 def lambda_handler(event, context):
 

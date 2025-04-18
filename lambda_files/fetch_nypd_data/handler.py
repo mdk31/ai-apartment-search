@@ -4,29 +4,24 @@ import boto3
 import boto3
 import psycopg2
 import requests
+import time
 from datetime import datetime, timedelta
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 
-# TODO: Add tests
-# TODO: update finish requests function
-# TODO: write load areas helper
+HISTORIC_ENDPOINT = ''
+YTD_ENDPOINT = ''
 
-MAX_CALLS = int(os.environ["MAX_CALLS"])
-SECRET_NAME = os.environ["DBSECRET"]
-
-SODA_LIMIT = 1000
-RATE_LIMIT_DELAY = 0.5
+DB_SECRET_NAME = os.environ['DBSECRET']
+LIMIT_PER_REQUEST = ''
+RATE_LIMIT_DELAY = ''
 
 sm_client = boto3.client('secretsmanager')
 cache = SecretCache(config=SecretCacheConfig(), client=sm_client)
 
-def get_db_secret():
-    secret_value = cache.get_secret_string(SECRET_NAME)
-    return json.loads(secret_value)
-
-def get_soda_api_secret():
-    secret_value = cache.get_secret_string(STREETEASY_API_KEY_NAME)
-    return json.loads(secret_value)['x-rapidapi-key']
+def get_secrets(secret_name, key=None):
+    secret_value = cache.get_secret_string(secret_name)
+    secret = json.loads(secret_value)
+    return secret[key] if key else secret
 
 def connect_to_db(creds):
     return psycopg2.connect(
@@ -37,22 +32,55 @@ def connect_to_db(creds):
         password=creds["password"]
     )
 
+def fetch_all_batches(endpoint, where_clause, headers):
+    all_rows = []
+    offset = 0
 
-def fetch_nypd_complaints(bootstrap):
-    today = datetime.today()
-    current_year = today.year
+    while True:
+        params = {
+            "$where": where_clause,
+            "$limit": LIMIT_PER_REQUEST,
+            "$offset": offset
+        }
+        response = requests.get(endpoint, headers=headers, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if not data:
+            break
+        all_rows.extend(data)
+        offset += LIMIT_PER_REQUEST
+        time.sleep(RATE_LIMIT_DELAY)
 
-    # initial window
-    five_years_ago = (today - timedelta(days=365 * 5)).strftime('%Y-%m-%d')
-    where_clause = f"cmplnt_fr_dt >= '{five_years_ago}'T00:00:00"
-
-    one_year_ago = (today - timedelta(days=365)).strftime('%Y-%m-%d')
-
-    # loop through years
-    while current_year >= 2010:
-        start_date = f"{current_year}-01-01"
+    return all_rows
         
 
+def fetch_nypd_complaints(token):
+    headers = {'X-App-Token': token}
+    today = datetime.today()
+    current_year = today.year
+    five_years_ago = (today - timedelta(days=365 * 5)).strftime('%Y-%m-%d')
+
+    where_history = f"cmplnt_fr_dt >= '{five_years_ago}'T00:00:00"
+    where_ytd = f"cmplnt_fr_dt >= '{current_year}-01-01T00:00:00'"
+
+    history_complaints = fetch_all_batches(HISTORIC_ENDPOINT, where_history, headers)
+    ytd_complaints = fetch_all_batches(YTD_ENDPOINT, where_ytd, headers)
+
+    return history_complaints, ytd_complaints
+        
+def store_nypd_data(conn, complaints):
+    with conn.cursor() as cursor:
+        for row in complaints:
+            cursor.execute(
+                """
+                d   
+                """,
+                (
+                    'df'
+                )
+            )
+    
+    conn.commit()
 
 def lambda_handler(event, context):
     db_creds = get_db_secret()

@@ -28,18 +28,6 @@ class BackendStack(Stack):
             retention=logs.RetentionDays.ONE_WEEK
         )
 
-        request_table = dynamodb.Table(
-            self, 'GlobalRequestCounter',
-            partition_key=dynamodb.Attribute(
-                name='date',
-                type=dynamodb.AttributeType.STRING
-            ),
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            removal_policy=cdk.RemovalPolicy.DESTROY
-        )
-
-        request_table.grant_read_write_data(request_handler_lambda)
-
         openai_tasks = sfn_tasks.LambdaInvoke(
             self, 'CallOpenAI',
             lambda_function=openai_lambda,
@@ -54,8 +42,6 @@ class BackendStack(Stack):
             handler='lambda_handler',
             environment={
                 "STEP_FUNCTION_ARN": state_machine.state_machine_arn,
-                "REQUEST_LIMIT_TABLE": request_table.table_name,
-                "DAILY_REQUEST_LIMIT": "1000"
             }
         )
 
@@ -130,39 +116,11 @@ class BackendStack(Stack):
         )
         api.root.add_method("POST", rest_lambda_integration)
 
-        web_acl = wafv2.CfnWebACL(
-            self, 'APIGatewayWAF',
-            scope='REGIONAL',
-            visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
-                cloud_watch_metrics_enabled=True,
-                metric_name='APIGatewayWAF',
-                sampled_requests_enabled=True
-            ),
-            default_action=wafv2.CfnWebACL.DefaultActionProperty(allow={}),
-            rules=[
-                wafv2.CfnWebACL.RuleProperty(
-                    name='CRSRule',
-                    statement = wafv2.CfnWebACL.StatementProperty(
-                        managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
-                            vendor_name='AWS',
-                            name='AWSManagedRulesCommonRuleSet'
-                        )
-                    ),
-                    visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
-                        cloud_watch_metrics_enabled=True,
-                        metric_name='CommonRuleSet',
-                        sampled_requests_enabled=True
-                    )
-                )
-            ]
-        )
-
         wafv2.CfnWebACLAssociation(
             self, 'BackendWAFAPIAssociation',
             resource_arn=api.deployment_stage.stage_arn,
             web_acl_arn=web_acl.attr_arn
         )
-
 
         cdk.CfnOutput(
             self, 'APIGatewayURL',

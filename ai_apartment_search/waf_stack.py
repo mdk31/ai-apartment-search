@@ -6,6 +6,9 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+# TODO: Add bot rules + IP rate limiting rules
+# TODO: refactor rules outside the waf definition, it's too messy
+
 class BackendStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)

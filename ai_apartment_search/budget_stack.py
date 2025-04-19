@@ -3,7 +3,8 @@ from aws_cdk import (
     Stack,
     aws_sns as sns,
     aws_sns_subscriptions as sns_subscriptions,
-    aws_budgets as budgets
+    aws_budgets as budgets,
+    aws_iam as iam
     
 )
 from constructs import Construct
@@ -15,6 +16,16 @@ class BudgetStack(Stack):
         budget_alert_topic = sns.Topic(
             self, 'BudgetAlertTopic',
             display_name='Budget Alert Notifications'
+        )
+
+        budget_alert_topic.add_to_resource_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                principals=[iam.ServicePrincipal('budgets.amazonaws.com')],
+                actions=['sns:Publish'],
+                resources=[budget_alert_topic.topic_arn]
+            )
+
         )
 
         # Create a budget

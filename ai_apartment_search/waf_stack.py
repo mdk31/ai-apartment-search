@@ -2,19 +2,7 @@ import aws_cdk as cdk
 import os
 from aws_cdk import (
     Stack,
-    aws_s3 as s3,
-    aws_s3_deployment as s3_deployment,
-    aws_cloudfront as cloudfront,
-    aws_iam as iam,
-    aws_cloudfront_origins as origins,
-    aws_stepfunctions as sfn,
-    aws_stepfunctions_tasks as sfn_tasks,
-    aws_lambda_python_alpha as lambda_python,
-    aws_apigateway as apigateway,
-    aws_wafv2 as wafv2,
-    aws_secretsmanager as secretsmanager,
-    aws_logs as logs,
-    aws_dynamodb as dynamodb
+    aws_wafv2 as wafv2
 )
 from constructs import Construct
 

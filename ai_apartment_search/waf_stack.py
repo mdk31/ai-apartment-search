@@ -6,12 +6,29 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-# TODO: Add bot rules + IP rate limiting rules
-# TODO: refactor rules outside the waf definition, it's too messy
+# TODO: IP rate limiting rules
 
 class BackendStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
+
+        bot_rule = wafv2.CfnWebACL.RuleProperty(
+            name='BotControlRule',
+            priority=1,
+            statement=wafv2.CfnWebACL.StatementProperty(
+                managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
+                    vendor_name='AWS',
+                    name='AWSManagedRulesBotControlRuleSet'
+                )
+            ),
+            action=wafv2.CfnWebACL.RuleActionProperty(block={}),
+            visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
+                cloud_watch_metrics_enabled=True,
+                metric_name="BotControl",
+                sampled_requests_enabled=True
+            )
+        )
+
 
         common_rule = wafv2.CfnWebACL.RuleProperty(
             name='CRSRule',

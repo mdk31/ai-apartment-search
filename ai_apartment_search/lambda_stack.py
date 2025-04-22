@@ -34,7 +34,7 @@ class LambdaStack(Stack):
         )
         monthly_reset_rule.add_target(
             targets.LambdaFunction(kill_lambda),
-            event=events.RuleTargetInput.from_object({"mode": "deactivate"})
+            event=events.RuleTargetInput.from_object({"mode": "activate"})
         )
 
 

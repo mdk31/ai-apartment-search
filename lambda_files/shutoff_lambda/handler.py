@@ -29,11 +29,11 @@ def lambda_handler(event, context):
     for rule in rules:
         if rule["Name"] == 'KillSwitch':
             current_action = list(rule["Action"].keys())[0]
-            if mode == "activate" and current_action != "Block":
-                rule["Action"] = {"Block": {}}
-                updated = True
-            elif mode == "deactivate" and current_action != "Count":
+            if mode == "activate" and current_action == "Block":
                 rule["Action"] = {"Count": {}}
+                updated = True
+            elif mode == "deactivate" and current_action == "Count":
+                rule["Action"] = {"Block": {}}
                 updated = True
             else:
                 print(f"Unexpected action: {rule['Action']}")

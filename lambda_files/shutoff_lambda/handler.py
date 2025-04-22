@@ -19,10 +19,23 @@ def lambda_handler(event, context):
     rules = web_acl['Rules']
     lock_token = web_acl['LockToken']
 
+    updated = False
+
     for rule in rules:
-        if rule['Name'] == 'KillSwitch':
-            rule['Action'] = {'Block': {}}
+        if rule["Name"] == 'KillSwitch':
+            current_action = list(rule["Action"].keys())[0]
+            if current_action == "Count":
+                rule["Action"] = {"Block": {}}
+                updated = True
+            elif current_action == "Block":
+                rule["Action"] = {"Count": {}}
+                updated = True
+            else:
+                print(f"Unexpected action: {rule['Action']}")
             break
+
+    if not updated:
+        raise Exception("KillSwitch not found")
 
     waf.update_web_acl(
         Name=WEB_ACL_NAME,
@@ -34,5 +47,9 @@ def lambda_handler(event, context):
         VisibilityConfig=web_acl['VisibilityConfig'],
         Description=web_acl.get('Description', '')
     )
+    return {
+        "statusCode": 200,
+        "body": f"KillSwitch toggled successfully. Now: {rules[0]['Action']}"
+        }
     
     

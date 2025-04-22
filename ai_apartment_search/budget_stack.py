@@ -4,13 +4,14 @@ from aws_cdk import (
     aws_sns as sns,
     aws_sns_subscriptions as sns_subscriptions,
     aws_budgets as budgets,
-    aws_iam as iam
+    aws_iam as iam,
+    aws_lambda_python_alpha as lambda_python
     
 )
 from constructs import Construct
 
 class BudgetStack(Stack):
-    def __init__(self, scope: Construct, id: str, **kwargs):
+    def __init__(self, scope: Construct, id: str, *, shutoff_lambda: lambda_python.Function, **kwargs):
         super().__init__(scope, id, **kwargs)
 
         budget_alert_topic = sns.Topic(
@@ -26,6 +27,10 @@ class BudgetStack(Stack):
                 resources=[budget_alert_topic.topic_arn]
             )
 
+        )
+
+        budget_alert_topic.add_subscription(
+            sns_subscriptions.LambdaSubscription(shutoff_lambda)
         )
 
         # Create a budget

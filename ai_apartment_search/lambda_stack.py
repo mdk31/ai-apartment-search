@@ -37,6 +37,31 @@ class LambdaStack(Stack):
             event=events.RuleTargetInput.from_object({"mode": "activate"})
         )
 
+        request_handler_lambda = lambda_python.PythonFunction(
+            self, 'RequestHandlerLambda',
+            entry='lambda_files/step_initate_lambda',
+            index='handler.py',
+            handler='lambda_handler',
+            environment={
+                "STEP_FUNCTION_ARN": state_machine.state_machine_arn,
+            }
+        )
+
+        openai_secret = secretsmanager.Secret.from_secret_name_v2(
+            self, 'OpenAISecret', 'OpenAIKey'
+        )
+
+        openai_lambda = lambda_python.PythonFunction(
+            self, 'OpenAILambda',
+            entry='lambda_files/openai_lambda',
+            index='handler.py',
+            environment={
+                'OPENAI_SECRET_NAME': openai_secret.secret_name
+            },
+            runtime=cdk.aws_lambda.Runtime.PYTHON_3_11,
+            timeout=cdk.Duration.seconds(10)
+        )
+
 
 
 

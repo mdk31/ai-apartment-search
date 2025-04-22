@@ -2,8 +2,9 @@ import aws_cdk as cdk
 from aws_cdk import (
     Stack,
     aws_lambda_python_alpha as lambda_python,
-    aws_wafv2 as wafv2
-
+    aws_wafv2 as wafv2,
+    aws_events as events,
+    aws_events_targets as targets
 
 )
 from constructs import Construct
@@ -26,5 +27,19 @@ class LambdaStack(Stack):
             timeout=cdk.Duration.seconds(10),
             memory_size=1024
         )
+
+        monthly_reset_rule = events.Rule(
+            self, 'ResetKillSwitchRule',
+            schedule=events.Schedule.cron(minute='0', hour='0', day='1', month='*', year='*'),
+        )
+        monthly_reset_rule.add_target(
+            targets.LambdaFunction(kill_lambda),
+            event=events.RuleTargetInput.from_object({"mode": "deactivate"})
+        )
+
+
+
+
+
 
         

@@ -13,6 +13,45 @@ class BackendStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
+        common_rule = wafv2.CfnWebACL.RuleProperty(
+            name='CRSRule',
+            statement = wafv2.CfnWebACL.StatementProperty(
+                managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
+                    vendor_name='AWS',
+                    name='AWSManagedRulesCommonRuleSet'
+                )
+            ),
+            visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
+                cloud_watch_metrics_enabled=True,
+                metric_name='CommonRuleSet',
+                sampled_requests_enabled=True
+            )
+        )
+
+
+        kill_switch_rule = wafv2.CfnWebACL.RuleProperty( # Kill switch rule for lambda
+            name='KillSwitch',
+            priority=0,
+            statement=wafv2.CfnWebACL.StatementProperty(
+                byte_match_statement=wafv2.CfnWebACL.ByteMatchStatementProperty(
+                    search_string='on',
+                    field_to_match=wafv2.CfnWebACL.FieldToMatchProperty(
+                        single_header={"Name": "x-kill-switch"} # filler header
+                        ),
+                        positional_constraint='EXACTLY',
+                        text_transformations=[
+                            {'priority': 0, "type": "NONE"}
+                        ]
+                    )
+            ),
+            action=wafv2.CfnWebACL.RuleActionProperty(count={}),
+            visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
+                cloud_watch_metrics_enabled=True,
+                metric_name='KillSwitch',
+                sampled_requests_enabled=True
+            )
+        )
+
         self.web_acl = wafv2.CfnWebACL(
             self, 'APIGatewayWAF',
             scope='REGIONAL',
@@ -23,41 +62,7 @@ class BackendStack(Stack):
             ),
             default_action=wafv2.CfnWebACL.DefaultActionProperty(allow={}),
             rules=[
-                wafv2.CfnWebACL.RuleProperty(
-                    name='CRSRule',
-                    statement = wafv2.CfnWebACL.StatementProperty(
-                        managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
-                            vendor_name='AWS',
-                            name='AWSManagedRulesCommonRuleSet'
-                        )
-                    ),
-                    visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
-                        cloud_watch_metrics_enabled=True,
-                        metric_name='CommonRuleSet',
-                        sampled_requests_enabled=True
-                    )
-                ),
-                wafv2.CfnWebACL.RuleProperty( # Kill switch rule for lambda
-                    name='KillSwitch',
-                    priority=0,
-                    statement=wafv2.CfnWebACL.StatementProperty(
-                        byte_match_statement=wafv2.CfnWebACL.ByteMatchStatementProperty(
-                            search_string='on',
-                            field_to_match=wafv2.CfnWebACL.FieldToMatchProperty(
-                                single_header={"Name": "x-kill-switch"}
-                            ),
-                            positional_constraint='EXACTLY',
-                            text_transformations=[
-                                {'priority': 0, "type": "NONE"}
-                            ]
-                        )
-                    ),
-                    action=wafv2.CfnWebACL.RuleActionProperty(block={}),
-                    visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
-                        cloud_watch_metrics_enabled=True,
-                        metric_name='KillSwitch',
-                        sampled_requests_enabled=True
-                    )
-                )
+                common_rule,
+                kill_switch_rule
             ]
         )

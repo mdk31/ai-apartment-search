@@ -9,6 +9,11 @@ WEB_ACL_SCOPE = os.getenv('WEB_ACL_SCOPE')
 
 def lambda_handler(event, context):
 
+    if "Records" in event and event["Records"][0].get("EventSource") == "aws:sns":
+        mode = "activate"
+    else:
+        mode = event.get("mode", "toggle")
+
     response = waf.get_webacl(
         Name=WEB_ACL_NAME,
         Scope=WEB_ACL_SCOPE,
@@ -24,10 +29,10 @@ def lambda_handler(event, context):
     for rule in rules:
         if rule["Name"] == 'KillSwitch':
             current_action = list(rule["Action"].keys())[0]
-            if current_action == "Count":
+            if mode == "activate" and current_action != "Block":
                 rule["Action"] = {"Block": {}}
                 updated = True
-            elif current_action == "Block":
+            elif mode == "deactivate" and current_action != "Count":
                 rule["Action"] = {"Count": {}}
                 updated = True
             else:

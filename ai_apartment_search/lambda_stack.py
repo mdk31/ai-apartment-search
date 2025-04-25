@@ -9,6 +9,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+# TODO: Move rest or lambdas, check where state machine should go
 class LambdaStack(Stack):
     def __init__(self, scope: Construct, id: str, *, web_acl: wafv2.CfnWebACL, env_name: str = "prod", **kwargs):
         super().__init__(scope, id, **kwargs)

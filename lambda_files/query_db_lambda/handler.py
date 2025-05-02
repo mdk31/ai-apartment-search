@@ -8,6 +8,7 @@ from psycopg2 import sql
 
 DB_HOST = os.environ['DB_HOST']
 DB_PORT = os.environ['DB_PORT']
+DB_SECRET = os.environ['DB_SECRET']
 DB_NAME = os.environ['DB_NAME']
 
 ALLOWED_FUNCTIONS = {

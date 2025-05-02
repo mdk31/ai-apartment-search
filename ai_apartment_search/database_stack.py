@@ -41,6 +41,8 @@ class DatabaseStack(Stack):
         # allow lambda function to get db secrets
         # db_secret.add_to_resource_policy(db_secret_policy)
 
+        db_credentials = rds.Credentials.from_generated_secret('postgres')
+
         database = rds.DatabaseInstance(
             self, "PostgreSQLInstance",
             engine=rds.DatabaseInstanceEngine.postgres(version=rds.PostgresEngineVersion.VER_13),
@@ -49,7 +51,7 @@ class DatabaseStack(Stack):
             allocated_storage='20GB',
             max_allocated_storage='100GB',
             storage_type=rds.StorageType.GP2,
-            credentials=rds.Credentials.from_generated_secret('postgres'),
+            credentials=db_credentials,
             security_groups=[db_security_group],
             publicly_accessible=False, # default
             database_name='rentalapp',
@@ -86,6 +88,6 @@ class DatabaseStack(Stack):
 
         cdk.CfnOutput(
             self, "DatabaseSecretName",
-            value=db_secret.secret_name
+            value=db_credentials.secret_name
         )
 

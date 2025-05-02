@@ -52,18 +52,19 @@ class DatabaseStack(Stack):
             credentials=rds.Credentials.from_generated_secret('postgres'),
             security_groups=[db_security_group],
             publicly_accessible=False, # default
+            database_name='rentalapp',
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
             backup_retention=cdk.Duration(days=7),
             delete_automated_backups=True,
             removal_policy=cdk.RemovalPolicy.RETAIN
         )
 
-        db_secret = database.secret
-        db_secret.node.default_child.add_property_override("SecretStringTemplate", json.dumps({
-            "host": database.db_instance_endpoint_address,
-            "port": "5432",
-            "dbname": "postgres"})
-        )
+        # db_secret = database.secret
+        # db_secret.node.default_child.add_property_override("SecretStringTemplate", json.dumps({
+        #     "host": database.db_instance_endpoint_address,
+        #     "port": "5432",
+        #     "dbname": "postgres"})
+        # )
 
 
         cdk.CfnOutput(

@@ -10,8 +10,11 @@ ALLOWED_FUNCTIONS = {
 
 }
 
-client = boto3.client('secretsmanager')
-cache = SecretCache(config=SecretCacheConfig(), client=client)
+secrentsclient = boto3.client('secretsmanager')
+cache = SecretCache(config=SecretCacheConfig(), client=secrentsclient)
+
+def get_db_connection():
+    user, password = get_db_credentials()
 
 def get_db_credentials():
     secret_name = os.environ['DBSECRET']
@@ -41,7 +44,7 @@ def lambda_handler(event, context):
 def refresh_schema_from_db():
     conn = get_db_connection()
 
-    
+
 def validate_column(col: str, from_tables: list[str], allowed_schema) -> sql.Identifier():
     if '.' in col:
         table, field = col.split('.', 1)

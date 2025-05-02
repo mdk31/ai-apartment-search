@@ -6,6 +6,10 @@ from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 from psycopg2.extras import RealDictCursor
 from psycopg2 import sql
 
+DB_HOST = os.environ['DB_HOST']
+DB_PORT = os.environ['DB_PORT']
+DB_NAME = os.environ['DB_NAME']
+
 ALLOWED_FUNCTIONS = {
 
 }
@@ -15,6 +19,14 @@ cache = SecretCache(config=SecretCacheConfig(), client=secrentsclient)
 
 def get_db_connection():
     user, password = get_db_credentials()
+    return psycopg2.connect(
+        dbname=DB_NAME,
+        user=user,
+        password=password,
+        host=DB_HOST,
+        port=DB_PORT
+    )
+
 
 def get_db_credentials():
     secret_name = os.environ['DBSECRET']

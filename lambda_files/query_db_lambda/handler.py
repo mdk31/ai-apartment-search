@@ -17,6 +17,15 @@ ALLOWED_FUNCTIONS = {
 
 }
 
+OPERATORS = {
+    "eq": "=",
+    "lte": "<=",
+    "gte": ">=",
+    "lt": "<",
+    "gt": ">",
+    "ne": "!="
+}
+
 secrentsclient = boto3.client('secretsmanager')
 s3client = boto3.client('s3')
 cache = SecretCache(config=SecretCacheConfig(), client=secrentsclient)
@@ -37,8 +46,6 @@ def build_function_call(func_dict, from_tables, allowed_schema):
             formatted_args.append(sql.Placeholder())
     
     return ALLOWED_FUNCTIONS[func_name](formatted_args)
-
-#     return ALLOWED_FUNCTIONS[func_name](formatted_args)
 
 def build_safe_sql(query_json, allowed_schema):
     select_fields = query_json['select']
@@ -65,39 +72,29 @@ def build_safe_sql(query_json, allowed_schema):
             build_function_call(on_clause, from_tables + [table], allowed_schema)
         ))
     
-#         join_sql_parts.append(sql.SQL(f" {join_type} JOIN {} ON {}").format(
-#             sql.Identifier(table),
-#             build_function_call(on_clause, from_tables + [table], allowed_schema)
-#         ))
-
-#     where_clauses = []
-#     params = []
-#     for col, cond in where.items():
-#         for op, val in cond.items():
-#             operator = {
-#                 "eq": "=",
-#                 "lte": "<=",
-#                 "gte": ">=",
-#                 "lt": "<",
-#                 "gt": ">",
-#                 "ne": "!="
-#             }.get(op)
-#             if operator is None:
-#                 raise ValueError(f"Unsupported operator: {op}")
-#             col_sql = validate_column(col, from_tables, allowed_schema)
-#             where_clauses.append(sql.SQL("{} {} %s").format(col_sql, sql.SQL(operator)))
-#             params.append(val)
-
-#     query_parts = [
-#         sql.SQL("SELECT "), select_sql,
-#         sql.SQL(" FROM "), from_sql
-#     ]
-#     if join_sql_parts:
-#         query_parts += join_sql_parts
-#     if where_clauses:
-#         query_parts += [sql.SQL(" WHERE "), sql.SQL(" AND ").join(where_clauses)]
-
-#     return sql.Composed(query_parts), params
+    where_clauses = []
+    params = []
+    for col, cond in where.items():
+        for op, val in cond.items():
+            operator = OPERATORS.get(op)
+            if operator is None:
+                raise ValueError(f"Unsupported operator: {op}")
+            col_sql = validate_column(col, from_tables, allowed_schema)
+            where_clauses.append(sql.SQL("{} {} %s").format(
+                col_sql, sql.SQL(operator)
+            ))
+            params.append(val)
+        
+    query_parts = [
+        sql.SQL("SELECT "), select_sql,
+        sql.SQL("FROM "), from_sql
+    ]
+    if join_sql_parts:
+        query_parts += join_sql_parts
+    if where_clauses:
+        query_parts += [sql.SQL("WHERE "), sql.SQL(" AND ").join(where_clauses)]
+    
+    return sql.Composed(query_parts), params
 
 def get_db_connection():
     user, password = get_db_credentials()

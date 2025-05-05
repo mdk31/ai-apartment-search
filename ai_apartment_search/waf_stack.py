@@ -79,6 +79,7 @@ class BackendStack(Stack):
             ),
             default_action=wafv2.CfnWebACL.DefaultActionProperty(allow={}),
             rules=[
+                bot_rule,
                 common_rule,
                 kill_switch_rule
             ]

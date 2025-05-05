@@ -6,6 +6,6 @@ from ai_apartment_search.frontend_stack import FrontendStack
 
 app = cdk.App()
 
-FrontendStack(app, "FrontendStack")
+# FrontendStack(app, "FrontendStack")
 
 app.synth()

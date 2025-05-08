@@ -55,6 +55,6 @@ def lambda_handler(event, context):
     return {
         "statusCode": 200,
         "body": f"KillSwitch toggled successfully. Now: {rules[0]['Action']}"
-        }
+    }
     
     

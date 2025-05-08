@@ -98,6 +98,7 @@ def build_safe_sql(query_json, allowed_schema):
         sql.SQL("SELECT "), select_sql,
         sql.SQL("FROM "), from_sql
     ]
+    
     if join_sql_parts:
         query_parts += join_sql_parts
     if where_clauses:

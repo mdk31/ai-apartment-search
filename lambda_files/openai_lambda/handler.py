@@ -59,7 +59,7 @@ def lambda_handler(event, context):
         suffix="{formatting_instructions}\nHere is your query:\n{query}\nOutput: ",
         input_variables=['query'],
         partial_variables = {'system': system_prompt,
-                             'task': task_prompt
+                             'task': task_prompt,
                              'formatting_instructions': '',
                              }
     ) 

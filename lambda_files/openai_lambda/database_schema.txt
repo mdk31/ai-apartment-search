@@ -1,0 +1,25 @@
+You have access to two tables: `listings` and `nypd_complaints`.
+
+listings:
+- id (int) — listing ID
+- geom (geometry) — location of the unit
+- price (int) — monthly rent
+- bedrooms (float)
+- bathrooms (float)
+- address (text)
+- neighborhood (text)
+- borough (text) — one of: Manhattan, Brooklyn, Queens, Bronx, Staten Island
+
+nypd_complaints:
+- geom (geometry) — location of the incident
+- complaint_type (text)
+- offense_level (text) — FELONY, MISDEMEANOR, or VIOLATION
+- date (date)
+- borough (text)
+
+All spatial joins use ST_DWithin(geom1, geom2, radius). Radius is in feet.
+
+Rules:
+
+- Do not output SQL. Only return valid JSON matching the format above.
+- Use fully qualified column names in "select", "group_by", and "having".

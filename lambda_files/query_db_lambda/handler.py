@@ -61,6 +61,8 @@ def build_safe_sql(query_json, allowed_schema):
     from_tables = query_json['from']
     joins = query_json.get('joins', [])
     where = query_json.get('where', {})
+    group_by = query_json.get('GROUPBY', {})
+    having = query_json.get('HAVING', {})
 
     select_sql = sql.SQL(', ').join([
         validate_column(col, from_tables, allowed_schema) for col in select_fields
@@ -93,12 +95,38 @@ def build_safe_sql(query_json, allowed_schema):
                 col_sql, sql.SQL(operator)
             ))
             params.append(val)
+
+    group_sql = sql.SQL(', ').join([
+        validate_column(col, from_tables, allowed_schema) for col in group_by
+    ]) if group_by else None
+
+    having_clauses = []
+    for cond in having:
+        agg = cond['aggregate']
+        col = cond['column']
+        operator = cond['operator']
+        value = cond['value']
+        if operator not in OPERATORS.values() and operator not in OPERATORS:
+            raise ValueError(f"Unsupported operator in HAVING: {operator}")
+        if agg not in {"COUNT", "AVG", "SUM", "MIN", "MAX"}:
+            raise ValueError(f"Unsupported aggregate: {agg}")
+        col_sql = (
+            sql.SQL("*") if col == "nypd_complaints.*"
+            else validate_column(col, from_tables, allowed_schema)
+        )
+        having_expr = sql.SQL("{}({}) {} %s").format(
+            sql.SQL(agg),
+            col_sql,
+            sql.SQL(operator)
+        )        
+        having_clauses.append(having_expr)
+        params.append(value)
         
     query_parts = [
         sql.SQL("SELECT "), select_sql,
         sql.SQL("FROM "), from_sql
     ]
-    
+
     if join_sql_parts:
         query_parts += join_sql_parts
     if where_clauses:

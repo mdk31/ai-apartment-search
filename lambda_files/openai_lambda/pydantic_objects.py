@@ -1,25 +1,36 @@
 from pydantic import BaseModel, Field
-from typing import List, Union, Literal
+from typing import Literal
+
 
 class JoinCondition(BaseModel):
-    name: str 
-    args: List[Union[str, int, float]]
+    name: Literal["ST_DWithin"]
+    args: list[str | int | float]
+
 
 class Join(BaseModel):
-    kind: Literal['inner', 'left']
-    table: Literal['nypd_complaints']
+    type: Literal["inner", "left"]
+    table: Literal["nypd_complaints"]
     on: JoinCondition
+
 
 class WhereClause(BaseModel):
     column: str
-    operator: Literal['=', '>', '<', '<=', '>=', '!=']
-    value: Union[str, float, int]
+    operator: Literal["=", "!=", "<", "<=", ">", ">="]
+    value: str | int | float
 
-class HavingCluase(BaseModel)
+
+class HavingClause(BaseModel):
+    aggregate: Literal["COUNT", "AVG", "SUM", "MAX", "MIN"]
+    column: str
+    operator: Literal["=", "!=", "<", "<=", ">", ">="]
+    value: int | float
+
 
 class SqlOutput(BaseModel):
-    """Safe SQL output"""
-    SELECT: list = Field(None)
-    FROM: list = Field(None)
-    JOIN: dict[list] = Field(None)
-    WHERE: list = Field(None)
+    """Safe SQL Output"""
+    SELECT: list[str]
+    FROM: list[Literal["listings"]]
+    JOINS: list[Join] = Field(None)
+    WHERE: list[WhereClause] = Field(None)
+    GROUPBY: list[str] = Field(None)
+    HAVING: list[HavingClause] = Field(None)

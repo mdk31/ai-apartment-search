@@ -15,15 +15,6 @@ ALLOWED_FUNCTIONS = {
     "ST_MakePoint": lambda args: sql.SQL("ST_MakePoint({}, {})").format(*args)
 }
 
-OPERATORS = {
-    "eq": "=",
-    "lte": "<=",
-    "gte": ">=",
-    "lt": "<",
-    "gt": ">",
-    "ne": "!="
-}
-
 secrentsclient = boto3.client('secretsmanager')
 s3client = boto3.client('s3')
 cache = SecretCache(config=SecretCacheConfig(), client=secrentsclient)
@@ -86,10 +77,7 @@ def build_safe_sql(query_json, allowed_schema):
     where_clauses = []
     params = []
     for col, cond in where.items():
-        for op, val in cond.items():
-            operator = OPERATORS.get(op)
-            if operator is None:
-                raise ValueError(f"Unsupported operator: {op}")
+        for operator, val in cond.items():
             col_sql = validate_column(col, from_tables, allowed_schema)
             where_clauses.append(sql.SQL("{} {} %s").format(
                 col_sql, sql.SQL(operator)
@@ -106,21 +94,21 @@ def build_safe_sql(query_json, allowed_schema):
         col = cond['column']
         operator = cond['operator']
         value = cond['value']
-        if operator not in OPERATORS.values() and operator not in OPERATORS:
-            raise ValueError(f"Unsupported operator in HAVING: {operator}")
-        if agg not in {"COUNT", "AVG", "SUM", "MIN", "MAX"}:
-            raise ValueError(f"Unsupported aggregate: {agg}")
-        col_sql = (
-            sql.SQL("*") if col == "nypd_complaints.*"
-            else validate_column(col, from_tables, allowed_schema)
-        )
+
+        # Handle COUNT(*)
+        if col == "*":
+            col_sql = sql.SQL("*")
+        else:
+            col_sql = validate_column(col, from_tables, allowed_schema)
+
         having_expr = sql.SQL("{}({}) {} %s").format(
             sql.SQL(agg),
             col_sql,
             sql.SQL(operator)
-        )        
+        )
         having_clauses.append(having_expr)
         params.append(value)
+
         
     query_parts = [
         sql.SQL("SELECT "), select_sql,

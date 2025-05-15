@@ -8,7 +8,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-class DatabaseStack(Stack):
+class NetworkingStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
     

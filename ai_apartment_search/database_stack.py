@@ -51,14 +51,6 @@ class DatabaseStack(Stack):
             delete_automated_backups=True,
             removal_policy=cdk.RemovalPolicy.RETAIN
         )
-
-        # db_secret = database.secret
-        # db_secret.node.default_child.add_property_override("SecretStringTemplate", json.dumps({
-        #     "host": database.db_instance_endpoint_address,
-        #     "port": "5432",
-        #     "dbname": "postgres"})
-        # )
-
         
         cdk.CfnOutput(
             self, 'DatabaseEndpoint',

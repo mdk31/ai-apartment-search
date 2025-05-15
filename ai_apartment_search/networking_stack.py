@@ -17,10 +17,6 @@ class DatabaseStack(Stack):
             nat_gateways=1,
             subnet_configuration=[
                 ec2.SubnetConfiguration(
-                    name='PublicSubnet',
-                    subnet_type=ec2.SubnetType.PUBLIC
-                ),
-                ec2.SubnetConfiguration(
                     name='PrivateSubnet',
                     subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
                 )

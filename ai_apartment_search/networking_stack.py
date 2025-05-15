@@ -27,7 +27,6 @@ class DatabaseStack(Stack):
             ]
         )
 
-
         db_security_group = ec2.SecurityGroup(
             self, "DBSecurityGroup",
             vpc=vpc,

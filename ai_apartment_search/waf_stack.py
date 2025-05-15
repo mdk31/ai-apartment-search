@@ -8,7 +8,7 @@ from constructs import Construct
 
 # TODO: IP rate limiting rules
 
-class BackendStack(Stack):
+class WafStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 

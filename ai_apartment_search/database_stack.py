@@ -32,15 +32,6 @@ class DatabaseStack(Stack):
             security_group_id=lambda_sg_id
         )
 
-        # db_secret_policy = iam.PolicyStatement(
-        #     actions=["secretsmanager:GetSecretValue"],
-        #     resources=[db_secret.secret_arn],
-        #     principals=[iam.ServicePrincipal("lambda.amazonaws.com")]
-        # )
-
-        # allow lambda function to get db secrets
-        # db_secret.add_to_resource_policy(db_secret_policy)
-
         db_credentials = rds.Credentials.from_generated_secret('postgres')
 
         database = rds.DatabaseInstance(
@@ -68,17 +59,6 @@ class DatabaseStack(Stack):
         #     "dbname": "postgres"})
         # )
 
-
-        cdk.CfnOutput(
-            self, 'VPCID',
-            value=vpc.vpc_id,
-            description='The VPC ID where the DB is deployed'
-        )
-
-        cdk.CfnOutput(
-            self, 'LambdaSecurityGroupID',
-            value=lambda_security_group.security_group_id,
-            description="The security group ID for lamda functions that need DB access")
         
         cdk.CfnOutput(
             self, 'DatabaseEndpoint',

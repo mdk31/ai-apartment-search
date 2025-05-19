@@ -42,14 +42,7 @@ class BackendStack(Stack):
             self, 'ImportedDBSecret', db_secret_name
         )
 
-        query_db_lambda = lambda_python.PythonFunction(
-            self, 'QueryDBLambda',
-            entry='lambda_files/query_db_lambda',
-            index='handler.py',
-            environment={
-                'DBSECRET': db_secret.secret_name
-            }
-        )
+
 
         query_task = sfn_tasks.LambdaInvoke(
             self, 'QueryDB',
@@ -59,15 +52,7 @@ class BackendStack(Stack):
 
         definition = openai_tasks.next(query_task)
 
-        state_machine = sfn.StateMachine(
-            self, 'BackendWorkflow',
-            definition=definition,
-            state_machine_type=sfn.StateMachineType.STANDARD,
-            logs=sfn.LogOptions(
-                destination=log_group,
-                level=sfn.LogLevel.ALL
-            )
-        )
+
 
         openai_secret.grant_read(openai_lambda)
 

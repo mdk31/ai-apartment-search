@@ -18,7 +18,7 @@ class NetworkingStack(Stack):
             subnet_configuration=[
                 ec2.SubnetConfiguration(
                     name='PrivateSubnet',
-                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
+                    subnet_type=ec2.SubnetType.PRIVATE_ISOLATED
                 )
             ]
         )

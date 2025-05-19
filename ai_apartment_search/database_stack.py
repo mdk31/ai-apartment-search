@@ -47,7 +47,7 @@ class DatabaseStack(Stack):
             publicly_accessible=False, # default
             database_name='rentalapp',
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
-            backup_retention=cdk.Duration(days=7),
+            backup_retention=cdk.Duration.days(7),
             delete_automated_backups=True,
             removal_policy=cdk.RemovalPolicy.RETAIN
         )
@@ -58,8 +58,10 @@ class DatabaseStack(Stack):
             description="The PostgreSQL DB endpoint"
         )
 
+        if database.secret is None:
+            raise ValueError("Secret was not created properly")
         cdk.CfnOutput(
             self, "DatabaseSecretName",
-            value=db_credentials.secret_name
+            value=database.secret.secret_name
         )
 

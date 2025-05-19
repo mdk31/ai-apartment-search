@@ -9,7 +9,7 @@ from ai_apartment_search.database_stack import DatabaseStack
 app = cdk.App()
 WafStack(app, 'WafStack')
 NetworkingStack(app, 'NetworkingStack')
-DatabaseStack
+DatabaseStack(app, 'DatabaseStack')
 
 # FrontendStack(app, "FrontendStack")
 

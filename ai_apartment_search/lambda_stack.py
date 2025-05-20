@@ -28,7 +28,9 @@ class LambdaStack(Stack):
 
         # Ensure lambda can connect to the DB security group
         db_sg.add_ingress_rule(
-            peer=lambda_sg
+            peer=lambda_sg,
+            connection=ec2.Port.tcp(5432),
+            description='Allow the lambda to access the PostgresSQL DB'
         )
 
         db_secret_name = cdk.Fn.import_value('DatabaseSecretName')
@@ -61,6 +63,7 @@ class LambdaStack(Stack):
             self, 'QueryDBLambda',
             entry='lambda_files/query_db_lambda',
             index='handler.py',
+            vpc=vpc, # explicitly join the vpc
             security_groups=[lambda_sg],
             environment=db_environment,
             runtime=cdk.aws_lambda.Runtime.PYTHON_3_11,

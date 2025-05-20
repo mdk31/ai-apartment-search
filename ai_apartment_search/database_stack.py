@@ -60,6 +60,7 @@ class DatabaseStack(Stack):
 
         if database.secret is None:
             raise ValueError("Secret was not created properly")
+        
         cdk.CfnOutput(
             self, "DatabaseSecretName",
             value=database.secret.secret_name

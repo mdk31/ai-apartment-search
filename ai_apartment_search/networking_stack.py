@@ -37,7 +37,8 @@ class NetworkingStack(Stack):
 
         db_security_group.add_ingress_rule(
             peer=lambda_security_group,
-            connection=ec2.Port.POSTGRES
+            connection=ec2.Port.POSTGRES,
+            description='Allow the lambda to access the PostgresSQL DB'
         )
 
         cdk.CfnOutput(

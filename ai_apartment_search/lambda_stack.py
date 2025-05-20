@@ -28,13 +28,6 @@ class LambdaStack(Stack):
         lambda_sg = ec2.SecurityGroup.from_security_group_id(self, "LambdaSG", security_group_id=db_lambda_sg_id)
         db_sg = ec2.SecurityGroup.from_security_group_id(self, 'DBSG', security_group_id=db_sg_id)
 
-        # Ensure lambda can connect to the DB security group
-        db_sg.add_ingress_rule(
-            peer=lambda_sg,
-            connection=ec2.Port.tcp(5432),
-            description='Allow the lambda to access the PostgresSQL DB'
-        )
-
         db_secret_name = cdk.Fn.import_value('DatabaseSecretName')
         if not db_secret_name:
             raise ValueError("Database credentials secret name not found")

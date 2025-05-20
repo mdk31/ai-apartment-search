@@ -11,6 +11,15 @@ class DataIngestionStack(Stack):
     def __init__(self, scope: Construct, id: str, env_name: str = "prod", **kwargs):
         super().__init__(scope, id, **kwargs)
 
+
+# In Lambda:
+        environment={
+            "DB_SECRET_NAME": db_instance.secret.secret_name,
+            "DB_HOST": db_instance.db_instance_endpoint_address,
+            "DB_PORT": db_instance.db_instance_endpoint_port,
+            "DB_NAME": "rentalapp"
+        }
+
         db_secret_name = cdk.Fn.import_value("DatabaseSecretName")
         
         max_daily_calls = 30 if env_name == 'dev' else 20

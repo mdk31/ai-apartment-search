@@ -66,3 +66,8 @@ class DatabaseStack(Stack):
             value=database.secret.secret_name
         )
 
+
+        cdk.CfnOutput(self, "DbHost", value=database.db_instance_endpoint_address)
+        cdk.CfnOutput(self, "DbPort", value=database.db_instance_endpoint_port)
+        cdk.CfnOutput(self, "DbName", value="rentalapp")
+

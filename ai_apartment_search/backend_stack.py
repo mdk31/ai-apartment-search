@@ -23,39 +23,6 @@ class BackendStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
-        log_group = logs.LogGroup(
-            self, 'OpenAIStateMachineLogs',
-            retention=logs.RetentionDays.ONE_WEEK
-        )
-
-        openai_tasks = sfn_tasks.LambdaInvoke(
-            self, 'CallOpenAI',
-            lambda_function=openai_lambda,
-            output_path="$.Payload"
-        )
-
-
-
-
-        db_secret_name = cdk.Fn.import_value('DatabaseSecretName')
-        db_secret = secretsmanager.Secret.from_secret_name_v2(
-            self, 'ImportedDBSecret', db_secret_name
-        )
-
-
-
-        query_task = sfn_tasks.LambdaInvoke(
-            self, 'QueryDB',
-            lambda_function=query_db_lambda,
-            output_path="$.Payload"
-        )
-
-        definition = openai_tasks.next(query_task)
-
-
-
-        openai_secret.grant_read(openai_lambda)
-
         api = apigateway.RestApi(
             self, 'BackendAPI',
             rest_api_name='Backend Service',
@@ -72,10 +39,10 @@ class BackendStack(Stack):
         plan.add_api_stage(
             stage=api.deployment_stage
         )
-        rest_lambda_integration = apigateway.LambdaIntegration(
-            request_handler_lambda
-        )
-        api.root.add_method("POST", rest_lambda_integration)
+        # rest_lambda_integration = apigateway.LambdaIntegration(
+        #     request_handler_lambda
+        # )
+        # api.root.add_method("POST", rest_lambda_integration)
 
         wafv2.CfnWebACLAssociation(
             self, 'BackendWAFAPIAssociation',

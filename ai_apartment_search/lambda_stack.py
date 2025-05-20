@@ -9,13 +9,15 @@ from aws_cdk import (
     aws_secretsmanager as secretsmanager,
     aws_logs as logs,
     aws_stepfunctions_tasks as sfn_tasks,
-    aws_ec2 as ec2
+    aws_ec2 as ec2,
+    aws_apigateway as apigateway
 )
 from constructs import Construct
 
 # TODO: Move rest or lambdas, check where state machine should go
 class LambdaStack(Stack):
-    def __init__(self, scope: Construct, id: str, *, web_acl: wafv2.CfnWebACL, env_name: str = "prod", **kwargs):
+    def __init__(self, scope: Construct, id: str, *, web_acl: wafv2.CfnWebACL, env_name: str = "prod",
+                 api: apigateway.RestApi,  **kwargs):
         super().__init__(scope, id, **kwargs)
 
         vpc_id = cdk.Fn.import_value('VPCID')

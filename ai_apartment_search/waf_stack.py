@@ -2,13 +2,15 @@ import aws_cdk as cdk
 import os
 from aws_cdk import (
     Stack,
-    aws_wafv2 as wafv2
+    aws_wafv2 as wafv2,
+    aws_apigateway as apigateway,
+
 )
 from constructs import Construct
 
 # TODO: IP rate limiting rules
 
-class WafStack(Stack):
+class ApiWafStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
@@ -83,4 +85,21 @@ class WafStack(Stack):
                 common_rule,
                 kill_switch_rule
             ]
+        )
+
+        api = apigateway.RestApi(
+            self, 'BackendAPI',
+            rest_api_name='Backend Service',
+        )
+
+        plan = api.add_usage_plan(
+            'UsagePlan',
+            name='RateLimitPlan',
+            throttle=apigateway.ThrottleSettings(
+                rate_limit=10,
+                burst_limit=20
+            )
+        )
+        plan.add_api_stage(
+            stage=api.deployment_stage
         )

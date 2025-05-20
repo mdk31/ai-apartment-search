@@ -11,29 +11,27 @@ class DataIngestionStack(Stack):
     def __init__(self, scope: Construct, id: str, env_name: str = "prod", **kwargs):
         super().__init__(scope, id, **kwargs)
 
-
-# In Lambda:
-        environment={
-            "DB_SECRET_NAME": db_instance.secret.secret_name,
-            "DB_HOST": db_instance.db_instance_endpoint_address,
-            "DB_PORT": db_instance.db_instance_endpoint_port,
-            "DB_NAME": "rentalapp"
-        }
-
         db_secret_name = cdk.Fn.import_value("DatabaseSecretName")
-        
+        host = cdk.Fn.import_value('DbHost')
+        port = cdk.Fn.import_value('DbPort')
+        name = cdk.Fn.import_value('DbName')
         max_daily_calls = 30 if env_name == 'dev' else 20
 
+        environment= {
+            "DB_SECRET_NAME": db_secret_name,
+            "DB_HOST": host,
+            "DB_PORT": port,
+            "DB_NAME": name,
+            'MAX_CALLS': max_daily_calls
+        }
+        
         fetch_active_rentals_lambda = lambda_python.PythonFunction(
             self, 'FetchActiveRentalLambda',
             entry='lambda_files/fetch_active_rentals',
             index='handler.py',
             runtime=cdk.aws_lambda.Runtime.PYTHON_3_11,
             timeout=cdk.Duration.minutes(5),
-            environment={
-                'MAX_CALLS': max_daily_calls,
-                'DBSECRET': db_secret_name
-            }
+            environment=environment
         )
         
         fetch_rental_details_lambda = lambda_python.PythonFunction(

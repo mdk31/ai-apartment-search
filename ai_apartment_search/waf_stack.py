@@ -103,3 +103,5 @@ class ApiWafStack(Stack):
         plan.add_api_stage(
             stage=api.deployment_stage
         )
+
+        self.api = api

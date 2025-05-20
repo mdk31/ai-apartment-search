@@ -148,6 +148,13 @@ class LambdaStack(Stack):
             )
         )
 
+        rest_lambda_integration = apigateway.LambdaIntegration(
+            request_handler_lambda # type: ignore
+        )
+
+        search_resource = api.root.add_resource('search') # search endpoint
+        search_resource.add_method("POST", rest_lambda_integration)
+
 
 
 

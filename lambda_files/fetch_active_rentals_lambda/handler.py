@@ -19,6 +19,10 @@ STREETEASY_API_KEY_NAME = ''
 AREA_FILE = os.path.join(os.path.dirname(__file__), 'valid_streeteasy_areas.txt')
 CHUNK_SIZE = 50
 
+# Divide max calls up
+MAX_ACTIVE_CALLS = MAX_CALLS // 5
+MAX_DETAIL_CALLS = MAX_CALLS - MAX_ACTIVE_CALLS
+
 sm_client = boto3.client('secretsmanager')
 cache = SecretCache(config=SecretCacheConfig(), client=sm_client)
 

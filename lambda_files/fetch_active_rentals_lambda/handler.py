@@ -6,22 +6,46 @@ import psycopg2
 import requests
 from datetime import datetime, timedelta
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
+from psycopg2.extensions import connection as PGConnection
 
-# TODO: Add tests
-# TODO: update finish requests function
-# TODO: write load areas helper
+# TODO: add streeteasy api key name
 
 MAX_CALLS = int(os.environ["MAX_CALLS"])
-SECRET_NAME = os.environ["DBSECRET"]
-STREETEASY_API_KEY_NAME = os.environ['STREETEASY_API']
+DB_SECRET_NAME = os.environ["DB_SECRET_NAME"]
+DB_HOST = os.environ["DB_HOST"]
+DB_PORT = int(os.environ["DB_PORT"])
+DB_NAME = os.environ['DB_NAME']
+STREETEASY_API_KEY_NAME = ''
 AREA_FILE = os.path.join(os.path.dirname(__file__), 'valid_streeteasy_areas.txt')
 CHUNK_SIZE = 50
 
 sm_client = boto3.client('secretsmanager')
 cache = SecretCache(config=SecretCacheConfig(), client=sm_client)
 
+def _ensure_active_rentals(conn: PGConnection):
+    with conn.cursor() as cursor:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS active_rentals (
+                id TEXT PRIMARY KEY,
+                url TEXT,
+                latitude DOUBLE PRECISION,
+                longitude DOUBLE PRECISION
+            );
+        """)
+    conn.commit()
+
+def _ensure_rental_details(conn: PGConnection):
+    with conn.cursor() as cursor:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS rental_details (
+
+            );
+        """)
+    conn.commit()
+
+
 def get_db_secret():
-    secret_value = cache.get_secret_string(SECRET_NAME)
+    secret_value = cache.get_secret_string(DB_SECRET_NAME)
     return json.loads(secret_value)
 
 def get_streeteasy_api_secret():
@@ -30,9 +54,9 @@ def get_streeteasy_api_secret():
 
 def connect_to_db(creds):
     return psycopg2.connect(
-        host=creds["host"],
-        port=int(creds["port"]),
-        dbname=creds["dbname"],
+        host=DB_HOST,
+        port=DB_PORT,
+        dbname=DB_NAME,
         user=creds["username"],
         password=creds["password"]
     )
@@ -56,15 +80,19 @@ def fetch_active_rentals(api_key):
                 'limit': 500,
                 'offset': offset
             }
-            response = requests.get(base_url, headers=headers, params=params)
-            response.raise_for_status()
-            data = response.json()
+            try:
+                response = requests.get(base_url, headers=headers, params=params)
+                response.raise_for_status()
+                data = response.json()
 
-            listings = data.get('listings', [])
-            if not listings:
-                break
+                listings = data.get('listings', [])
+                if not listings:
+                    print(f"[INFO] No listings returned for areas: {chunk}, offset: {offset}")
+                else:
+                    rentals.extend(listings)
+            except Exception as e:
+                print(f"[ERROR] Failed API call for areas: {chunk}, offset: {offset} — {e}")
 
-            rentals.extend(listings)            
             offset += 500
             call_count+= 1
         
@@ -124,6 +152,7 @@ def load_valid_areas(chunk_size=CHUNK_SIZE):
         return [all_areas[i:i + chunk_size] for i in range(0, len(all_areas), chunk_size)]
 
 def store_active_rentals(conn, rentals):
+    _ensure_active_rentals(conn)
     with conn.cursor() as cursor:
         cursor.execute("TRUNCATE TABLE active_rentals")
         for rental in rentals:

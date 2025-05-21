@@ -33,9 +33,3 @@ class DataIngestionStack(Stack):
             timeout=cdk.Duration.minutes(5),
             environment=environment
         )
-        
-        fetch_rental_details_lambda = lambda_python.PythonFunction(
-            self, 'FetchRentalDetailsLambda',
-            entry='lambda_files/fetch_rental_details',
-            index='handler.py'
-        )

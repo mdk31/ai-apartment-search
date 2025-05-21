@@ -31,7 +31,7 @@ output1 = {
     "having": [
         {
             "aggregate": "COUNT",
-            "column": "nypd_complaints.*",
+            "column": "nypd_complaints.id",
             "operator": "<",
             "value": 3
         }

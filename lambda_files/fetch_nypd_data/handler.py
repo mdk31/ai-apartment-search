@@ -11,7 +11,10 @@ from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 HISTORIC_ENDPOINT = ''
 YTD_ENDPOINT = ''
 
-DB_SECRET_NAME = os.environ['DBSECRET']
+DB_SECRET_NAME = os.environ["DB_SECRET_NAME"]
+DB_HOST = os.environ["DB_HOST"]
+DB_PORT = int(os.environ["DB_PORT"])
+DB_NAME = os.environ['DB_NAME']
 LIMIT_PER_REQUEST = ''
 RATE_LIMIT_DELAY = ''
 
